@@ -38,10 +38,15 @@ The encoder comprises three progressively deeper residual blocks (32 → 64 → 
 
 The following publicly available datasets were used to train and evaluate CrackSeg-GWD:
 SteelCrack: 4355 images (3300 train / 530 test / 525 val), resized to 512×512. Collected from the Nanjing Second Yangtze River Bridge and Humen Bridge; includes diverse steel crack types under varying environmental conditions. https://github.com/hzlbbfrog/Civil-dataset. 
+
 YCD: 776 images (622 train / 154 test), 512×512. Contains road cracks and concrete wall cracks captured at varying camera distances and scales. [https://drive.google.com/file/d/1imZTwMm20vKgPv9ESVxgZZQnDw01FNdB/view?usp=drive_link](https://drive.google.com/file/d/1imZTwMm20vKgPv9ESVxgZZQnDw01FNdB/view?usp=sharing)
+
 Crack500: 3368 images (2244 train / 1124 test), 360×640. Challenging pavement crack dataset with inconsistent widths, occlusions, and visual clutter. https://github.com/fyangneil/pavement-crack-detection
+
 DeepCrack: 530 images (300 train / 230 test), 544×384. Pixel-level annotated dataset covering diverse crack types under shadows, moisture, and variable lighting. https://github.com/yhlleo/DeepCrack
+
 Ozgenel: 458 high-resolution images (366 train / 92 test), 4032×3024. Concrete crack images collected from buildings at Middle East Technical University. https://data.mendeley.com/datasets/jwsn7tfbrp/1
+
 QRCD (Field-collected): 128 test-only images, 3024×3024. High-resolution crack images collected from Qingyuan Road under real-world inspection conditions (not used in training).  [https://drive.google.com/file/d/1HHUAAsJBGeT0KJ_C4NkNEAw3XMQOWd0s/view?usp=drive_link](https://drive.google.com/file/d/1qMY0zxnFS7HQYdm6etn0biimc1LT63-u/view?usp=sharing)
 
 ---
