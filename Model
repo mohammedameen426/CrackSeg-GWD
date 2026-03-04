@@ -1,0 +1,148 @@
+import tensorflow as tf
+from tensorflow.keras import layers, models
+from tensorflow.keras import initializers, regularizers
+
+# Group Normalization
+class GroupNormalization(layers.Layer):
+    def __init__(self, groups=32, axis=-1, epsilon=1e-5, **kwargs):
+        super().__init__(**kwargs)
+        self.groups = groups
+        self.axis = axis
+        self.epsilon = epsilon
+
+    def build(self, input_shape):
+        dim = input_shape[self.axis]
+        if dim is None:
+            raise ValueError("Axis dimension must be defined.")
+        if dim % self.groups != 0:
+            raise ValueError(f"{dim} channels not divisible by {self.groups} groups.")
+        self.gamma = self.add_weight(shape=(dim,), initializer="ones", name="gamma")
+        self.beta = self.add_weight(shape=(dim,), initializer="zeros", name="beta")
+        super().build(input_shape)
+
+    def call(self, inputs):
+        N, H, W, C = tf.shape(inputs)[0], tf.shape(inputs)[1], tf.shape(inputs)[2], tf.shape(inputs)[3]
+        G = self.groups
+        x = tf.reshape(inputs, [N, H, W, G, C // G])
+        mean, var = tf.nn.moments(x, [1,2,4], keepdims=True)
+        x = (x - mean) / tf.sqrt(var + self.epsilon)
+        x = tf.reshape(x, [N, H, W, C])
+        return x * self.gamma + self.beta
+
+# Weight-Standardized Conv2D
+class WSConv2D(layers.Conv2D):
+    def __init__(self, *args, epsilon=1e-5, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.epsilon = epsilon
+
+    def call(self, inputs):
+        kernel = self.kernel
+        mean, var = tf.nn.moments(kernel, axes=[0,1,2], keepdims=True)
+        kernel_std = (kernel - mean) / tf.sqrt(var + self.epsilon)
+        outputs = tf.nn.conv2d(
+            inputs,
+            kernel_std,
+            strides=[1, *self.strides, 1],
+            padding=self.padding.upper()
+        )
+        if self.use_bias:
+            outputs = tf.nn.bias_add(outputs, self.bias)
+        if self.activation is not None:
+            return self.activation(outputs)
+        return outputs
+
+# DropBlock2D
+class DropBlock2D(layers.Layer):
+    def __init__(self, block_size=7, keep_prob=0.9, **kwargs):
+        super().__init__(**kwargs)
+        self.block_size = block_size
+        self.keep_prob = keep_prob
+
+    def build(self, input_shape):
+        h, w = input_shape[1], input_shape[2]
+        if h < self.block_size or w < self.block_size:
+            raise ValueError("Input spatial dimensions must be >= block_size.")
+        super().build(input_shape)
+
+    def call(self, inputs, training=None):
+        if not training:
+            return inputs
+        gamma = ((1 - self.keep_prob) / (self.block_size ** 2)) * (
+            tf.cast(tf.shape(inputs)[1] * tf.shape(inputs)[2], tf.float32) /
+            tf.cast((tf.shape(inputs)[1] - self.block_size + 1) *
+                    (tf.shape(inputs)[2] - self.block_size + 1), tf.float32)
+        )
+        mask = tf.cast(tf.random.uniform(tf.shape(inputs)) < gamma, tf.float32)
+        mask = tf.nn.max_pool2d(
+            mask,
+            ksize=self.block_size,
+            strides=1,
+            padding='SAME'
+        )
+        mask = 1 - mask
+        # scale mask to maintain activation magnitude
+        scale = tf.cast(tf.size(mask), tf.float32) / tf.reduce_sum(mask)
+        return inputs * mask * scale
+# Model Builder
+def build_model(input_shape=(256,256,1)):
+    inputs = layers.Input(shape=input_shape, name='input_layer_14')
+    x = layers.GaussianNoise(0.1, name='gaussian_noise_14')(inputs)
+    x = GroupNormalization(groups=1, axis=-1, name='group_normalization_14')(x)
+    x = layers.Activation('relu', name='activation_108')(x)
+
+    # Residual block 1
+    skip = WSConv2D(32, kernel_size=1, padding='same', name='ws_conv2d_216')(x)
+    y = WSConv2D(32, kernel_size=3, padding='same', name='ws_conv2d_214')(x)
+    y = GroupNormalization(groups=32, axis=-1, name='group_normalization_15')(y)
+    y = layers.Activation('relu', name='activation_109')(y)
+    y = WSConv2D(32, kernel_size=3, padding='same', name='ws_conv2d_215')(y)
+    x = layers.Add(name='add_38')([skip, y])
+    x = DropBlock2D(name='drop_block2d_16')(x)
+    x = layers.MaxPooling2D(name='max_pooling2d_28')(x)
+
+    # Residual block 2
+    x = GroupNormalization(groups=32, axis=-1, name='group_normalization_16')(x)
+    x = layers.Activation('relu', name='activation_110')(x)
+    y = WSConv2D(64, kernel_size=3, padding='same', name='ws_conv2d_221')(x)
+    y = GroupNormalization(groups=64, axis=-1, name='group_normalization_17')(y)
+    y = layers.Activation('relu', name='activation_111')(y)
+    y = WSConv2D(64, kernel_size=3, padding='same', name='ws_conv2d_222')(y)
+    skip = WSConv2D(64, kernel_size=1, padding='same', name='ws_conv2d_223')(x)
+    x = layers.Add(name='add_39')([skip, y])
+    x = DropBlock2D(name='drop_block2d_17')(x)
+    x = layers.MaxPooling2D(name='max_pooling2d_29')(x)
+
+    # Residual block 3
+    x = GroupNormalization(groups=64, axis=-1, name='group_normalization_18')(x)
+    x = layers.Activation('relu', name='activation_112')(x)
+    y = WSConv2D(128, kernel_size=3, padding='same', name='ws_conv2d_228')(x)
+    y = GroupNormalization(groups=128, axis=-1, name='group_normalization_19')(y)
+    y = layers.Activation('relu', name='activation_113')(y)
+    y = WSConv2D(128, kernel_size=3, padding='same', name='ws_conv2d_229')(y)
+    skip = WSConv2D(128, kernel_size=1, padding='same', name='ws_conv2d_230')(x)
+    x = layers.Add(name='add_40')([skip, y])
+    x = DropBlock2D(name='drop_block2d_18')(x)
+    x = layers.MaxPooling2D(name='max_pooling2d_30')(x)
+
+    # Decoder
+    u1 = layers.Conv2DTranspose(128, 2, 2, padding='same', name='conv2d_transpose_24')(x)
+    u1 = GroupNormalization(groups=128, axis=-1, name='group_normalization_20')(u1)
+    u1 = layers.Activation('relu', name='activation_114')(u1)
+    u2 = layers.Conv2DTranspose(64, 2, 2, padding='same', name='conv2d_transpose_25')(u1)
+    u2 = GroupNormalization(groups=64, axis=-1, name='group_normalization_21')(u2)
+    u2 = layers.Activation('relu', name='activation_115')(u2)
+    u3 = layers.Conv2DTranspose(32, 2, 2, padding='same', name='conv2d_transpose_26')(u2)
+    u3 = GroupNormalization(groups=32, axis=-1, name='group_normalization_22')(u3)
+    u3 = layers.Activation('relu', name='activation_116')(u3)
+    u4 = WSConv2D(32, 3, padding='same', name='ws_conv2d_235')(u3)
+    u4 = GroupNormalization(groups=32, axis=-1, name='group_normalization_23')(u4)
+    u4 = layers.Activation('relu', name='activation_117')(u4)
+    u5 = WSConv2D(1, 3, padding='same', name='ws_conv2d_236')(u4)
+    u5 = layers.Activation('sigmoid', name='activation_118')(u5)
+
+    outputs = ResizeLayer((256,256), name='resize_layer_8')(u5)
+    return models.Model(inputs=inputs, outputs=outputs, name='custom_unet_model')
+
+if __name__ == '__main__':
+    model = build_model()
+    model.summary()
