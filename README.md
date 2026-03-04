@@ -1,5 +1,5 @@
 
-# CrackSeg-GWD: Automated Lightweight Networks for Multi-Material Bridge Crack Segmentation
+# Automated lightweight networks for multi-material bridge crack segmentation
 
 > A lightweight encoder–decoder model integrating Group Normalization, Weight-Standardized Convolutions, DropBlock regularization, and Symmetric Unified Focal Loss for crack segmentation across concrete, steel, and asphalt surfaces.
 
