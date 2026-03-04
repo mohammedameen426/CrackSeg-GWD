@@ -130,19 +130,6 @@ python inference.py --weights weights/crackseg_gwd_best.h5 --input path/to/image
 ---
 
 
-
-## Pretrained Weights
-
-Pretrained model weights are available for download:
-
-| Model | Dataset | mIoU | Download |
-|-------|---------|------|----------|
-| CrackSeg-GWD | SteelCrack | 0.825 | [Link](https://github.com/mohammedameen426/CrackSeg-GWD/releases) |
-| CrackSeg-GWD | DeepCrack | 0.851 | [Link](https://github.com/mohammedameen426/CrackSeg-GWD/releases) |
-| CrackSeg-GWD | Combined (Unified) | 0.817 | [Link](https://github.com/mohammedameen426/CrackSeg-GWD/releases) |
-
----
-
 ## License
 
 This project is licensed under the [Apache License 2.0](LICENSE).
