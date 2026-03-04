@@ -21,7 +21,7 @@ On average, CrackSeg-GWD surpasses ten state-of-the-art models by **6.7% in mIoU
 
 ## Model Architecture
 
-![CrackSeg-GWD Architecture](figures/architecture.png)
+![CrackSeg-GWD Architecture](figures/image.png)
 
 The architecture follows a U-Net-inspired encoder–decoder structure with four key innovations:
 
@@ -189,10 +189,11 @@ Pretrained model weights are available for download:
 
 This project is licensed under the [Apache License 2.0](LICENSE).
 
-> **Patent Notice**: The method described in this repository is protected under a Chinese Invention Patent  
-> (发明专利：一种裂缝图像分割方法及系统). The code is made available for academic and non-commercial  
-> research purposes. For commercial use or licensing inquiries, please contact the authors.
-
+> **Patent Notice**: The method described in this repository is protected under a  
+> Chinese Invention Patent (发明专利：一种裂缝图像分割方法及系统,  
+> 专利号：ZL 2025 1 1400055.6).  
+> The code is made available for **academic and non-commercial research purposes only**.  
+> For commercial use or licensing inquiries, please contact the authors.
 ---
 
 ## Citation
