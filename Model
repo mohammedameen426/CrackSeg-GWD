@@ -83,6 +83,10 @@ class DropBlock2D(layers.Layer):
         # scale mask to maintain activation magnitude
         scale = tf.cast(tf.size(mask), tf.float32) / tf.reduce_sum(mask)
         return inputs * mask * scale
+# Resize Layer
+def ResizeLayer(size, name=None):
+    return layers.Lambda(lambda x: tf.image.resize(x, size), name=name)
+
 # Model Builder
 def build_model(input_shape=(256,256,1)):
     inputs = layers.Input(shape=input_shape, name='input_layer_14')
